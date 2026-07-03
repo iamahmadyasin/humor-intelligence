@@ -1,10 +1,27 @@
 # Humor Intelligence
 
-Predicting and explaining humor in text. A fine-tuned transformer learns to
-score how funny a joke is (trained on 430k+ rated Reddit jokes), then an LLM
-layer explains *why* a given joke scored the way it did.
+Predicting and explaining humor in text. A fine-tuned transformer scores how
+funny a joke is (trained on 430k+ rated Reddit jokes), beating a classical
+baseline; a planned LLM layer explains why a joke scored the way it did.
 
-**Status:** in progress — EDA complete, data cleaning + baseline next.
+**Status:** models trained and published.
+
+## Headline results
+
+| Model | Context | Test Spearman | Test Pearson |
+|---|---|---|---|
+| TF-IDF + Ridge baseline | — | 0.363 | — |
+| DistilBERT-128 | 128 tokens | 0.4038 | 0.4397 |
+| DistilBERT-256 | 256 tokens | 0.4059 | 0.4465 |
+
+The fine-tuned transformer clearly beats the classical baseline. Between 128 and
+256 token contexts the difference is within run-to-run noise (they are
+statistically equivalent), so 128 is the preferred model because it offers same quality,
+while being ~3x faster to train. See `PROJECT_LOG.md` for the full story.
+
+Models on the Hugging Face Hub:
+- 128-token: iamahmadyasin/humor-intelligence-distilbert
+- 256-token: iamahmadyasin/humor-intelligence-distilbert-256
 
 ## Project structure
 
@@ -14,35 +31,40 @@ humor-intelligence/
 │   ├── raw/            # original downloaded data (gitignored)
 │   └── processed/      # cleaned/split data ready for training (gitignored)
 ├── notebooks/
-│   └── 01_eda.ipynb    # exploration and visualization
+│   ├── 01_eda.ipynb
+│   ├── 02_clean.ipynb
+│   ├── 03_baseline.ipynb
+│   ├── 04_finetune_colab_128.ipynb
+│   ├── 05_finetune_colab_256.ipynb
+│   ├── 06_finetune_kaggle_128.ipynb
+│   └── 07_finetune_kaggle_256.ipynb
 ├── src/
 │   ├── config.py       # paths and constants
-│   └── data.py         # load/clean helpers, reused by notebooks + scripts
+│   ├── data.py         # download, clean, build processed splits
+│   └── baseline.py     # TF-IDF + Ridge baseline
 ├── reports/
-│   └── figures/        # saved charts (committed, so they render on GitHub)
-├── models/             # saved model checkpoints (gitignored)
-├── app/                # demo app (built later)
+│   └── figures/        # saved charts (committed)
+├── models/             # local checkpoints (gitignored)
+├── app/                # demo app (planned)
+├── PROJECT_LOG.md      # engineering narrative
 ├── requirements.txt
 └── README.md
 ```
 
 ## Setup (Windows)
 
-Open a PowerShell window in the project folder. Easiest way: in File Explorer,
-Shift + right-click the `humor-intelligence` folder and choose **"Open
-PowerShell window here"**. (Or open PowerShell from the Start menu and
-`cd "D:\path\to\humor-intelligence"`.)
+Open a PowerShell window in the project folder (in File Explorer, Shift +
+right-click the folder -> "Open PowerShell window here").
 
 1. Create a virtual environment:
    ```powershell
    python -m venv venv
    ```
-2. Activate it (your prompt should then start with `(venv)`):
+2. Activate it (prompt should show `(venv)`):
    ```powershell
    .\venv\Scripts\Activate.ps1
    ```
-   If PowerShell blocks this with a "running scripts is disabled" error, run
-   the following once, then retry activation:
+   If PowerShell blocks the script, run once then retry:
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
@@ -54,88 +76,59 @@ PowerShell window here"**. (Or open PowerShell from the Start menu and
    ```powershell
    python -m ipykernel install --user --name humor-intelligence
    ```
-5. Download the dataset:
+5. Download + clean the dataset (builds `data/processed/`):
    ```powershell
    python src\data.py
    ```
-   This pulls the rJokes dataset (~430k Reddit jokes with humor-score labels)
-   into `data\raw\`.
-6. Launch Jupyter and open the notebook:
+6. Run the baseline (CPU, a couple of minutes):
+   ```powershell
+   python src\baseline.py
+   ```
+7. Launch notebooks:
    ```powershell
    jupyter notebook
    ```
-   This opens Jupyter in your browser. Open `notebooks\01_eda.ipynb` and, from
-   the Kernel menu, select the **humor-intelligence** kernel, then run the
-   cells. (If you use an editor with built-in notebook support instead, just
-   pick the same kernel there.)
-
-> Note: every new terminal session needs step 2 again to re-activate the venv
-> before running anything.
 
 ## Compute & workflow
 
-Model fine-tuning needs a GPU, which this project runs on **Google Colab or
-Kaggle's free tier** — not locally. The workflow is split:
+- **Local (CPU):** data download, cleaning, EDA, TF-IDF baseline.
+- **Colab / Kaggle (free GPU):** transformer fine-tuning. The training notebooks
+  clone this repo, rebuild the cleaned data, train, and push the model to the
+  Hugging Face Hub. Model weights are not committed to git.
 
-- **Local (this repo):** data download, cleaning, EDA, and the CPU-friendly
-  baseline. Light work, done in the venv above.
-- **Colab / Kaggle:** transformer fine-tuning. The training notebook clones
-  this repo (`!git clone <your repo url>`), runs on the free GPU, and saves
-  the trained model out (downloaded or pushed to the Hugging Face Hub — model
-  weights are **not** committed to git; see `.gitignore`).
+Training notebooks are provided for both Colab and Kaggle, at **128 and 256
+tokens**, to document the free-tier workflow and the sequence-length experiment.
 
-Because of this split, keep the repo pushed to GitHub so the Colab/Kaggle side
-always has the latest code and data-loading logic.
+> Multi-GPU note: effective batch size = per-device batch x number of GPUs. On a
+> single-GPU platform use `BATCH_SIZE=32`; on Kaggle's 2-GPU T4 use `BATCH_SIZE=16`
+> to keep the effective batch at 32. Mismatching this silently changes the number
+> of gradient updates (see PROJECT_LOG.md).
 
 ## Dataset
 
-**rJokes** (Weller & Seppi, LREC 2020) — ~432k Reddit r/Jokes posts, each
-labeled with a humor score. Pre-split into train/dev/test. A published
-benchmark, so results can be compared against numbers in the original paper.
+**rJokes** (Weller & Seppi, LREC 2020) — ~432k Reddit r/Jokes posts.
 
 - Paper: https://aclanthology.org/2020.lrec-1.753/
 - Source: https://github.com/orionw/rJokesData
 
-**Important — the label is already log-scaled.** The `score` column is not the
-raw Reddit score. The authors applied `round(ln(raw_score + 1))`, giving
-discrete integer labels 0–11 (raw scores run into the millions; these don't).
-Do **not** log-transform it again during modeling. It's used directly as a
-regression target.
+**The label is already log-scaled:** `score` is `round(ln(raw_score + 1))`,
+giving integers 0-11. It is used directly as a regression target — do not
+log-transform again.
 
-### Known data-quality notes (from EDA)
+### Data cleaning (see EDA)
 
-- ~1.65% of jokes are exact duplicates (Reddit reposts) — removed during
-  cleaning to avoid train/dev/test leakage.
-- ~4.9% of entries are ≤8 words; many are title-only fragments or orphaned
-  punchlines with no setup (e.g. jokes whose content was a linked image).
-  Very short entries are filtered during cleaning.
-- Joke length correlates only weakly with score (r ≈ 0.13), so length alone
-  is not a shortcut the model can exploit.
+- Removed 5,707 exact-duplicate jokes (Reddit reposts).
+- Dropped ultra-short (<5 word) title-only fragments.
+- Removed dev/test jokes that also appeared in train (~2.4%) to prevent leakage.
+- Cleaned sizes: 339,499 train / 41,941 dev / 41,957 test.
 
 ## Task & evaluation
 
-**Primary task: regression** — predict the 0–11 humor label directly.
-Evaluated with **Spearman correlation** against the human labels, matching the
-metric reported in the original rJokes paper (enables a direct benchmark
-comparison). A bucketed 4-class view (not funny / mild / funny / very funny)
-is kept as a secondary framing for confusion-matrix visualization.
-
-## Roadmap
-
-- [x] Project scaffold, data download, EDA
-- [ ] **Data cleaning** — dedupe + drop ultra-short entries; save cleaned
-      splits to `data/processed/` (`src/data.py`)
-- [ ] **Baseline** — TF-IDF + linear regression (CPU, runs locally); record
-      Spearman correlation as the reference number to beat
-- [ ] **Fine-tuned model** — DistilBERT/RoBERTa regression head, trained on
-      Colab/Kaggle free GPU; compare Spearman vs. baseline and vs. the paper
-- [ ] **LLM explanation layer** — given a joke + predicted score, an LLM
-      explains why it's funny/not; LLM-as-judge experiment compares the LLM's
-      humor ranking against the trained model and human labels
-- [ ] **Demo** — interactive app to score and explain any input joke
-- [ ] **Writeup** — results, findings, and portfolio-facing summary
+**Regression** on the 0-11 humor label, evaluated with **Spearman correlation**
+against human-derived scores (matching the rJokes paper for benchmark
+comparison). Pearson also reported.
 
 ## License / data use
 
-Jokes are from Reddit under the Reddit User Agreement; see the dataset source
-above. This repo does not redistribute the data — it's downloaded on setup.
+Jokes are from Reddit under the Reddit User Agreement; see the dataset source.
+This repo does not redistribute the data, it's downloaded on setup.

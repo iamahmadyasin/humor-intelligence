@@ -1,10 +1,10 @@
 # Humor Intelligence
 
-Predicting and explaining humor in text. A fine-tuned transformer scores how
-funny a joke is (trained on 430k+ rated Reddit jokes), beating a classical
-baseline; a planned LLM layer explains why a joke scored the way it did.
+Predicting humor in text. This is a fine-tuned transformer that scores how funny a joke is
+(trained on 430k+ rated Reddit jokes), beating a classical baseline, with a full
+analysis of where it succeeds and fails.
 
-**Status:** models trained and published.
+**Status:** complete (models trained, published, and analyzed).
 
 ## Headline results
 
@@ -15,9 +15,12 @@ baseline; a planned LLM layer explains why a joke scored the way it did.
 | DistilBERT-256 | 256 tokens | 0.4059 | 0.4465 |
 
 The fine-tuned transformer clearly beats the classical baseline. Between 128 and
-256 token contexts the difference is within run-to-run noise (they are
-statistically equivalent), so 128 is the preferred model because it offers same quality,
-while being ~3x faster to train. See `PROJECT_LOG.md` for the full story.
+256 token contexts the difference is within run-to-run noise (statistically
+equivalent), so 128 is the preferred model because of it is same quality while being faster to train
+(shorter sequences mean less compute per example). Both models were evaluated
+and analyzed (`08_results_colab_128.ipynb`, `09_results_colab_256.ipynb`); they reproduce their training scores exactly
+and behave near-identically. See `WRITEUP.md` for the full analysis and
+`PROJECT_LOG.md` for the engineering narrative.
 
 Models on the Hugging Face Hub:
 - 128-token: iamahmadyasin/humor-intelligence-distilbert
@@ -37,24 +40,24 @@ humor-intelligence/
 │   ├── 04_finetune_colab_128.ipynb
 │   ├── 05_finetune_kaggle_128.ipynb
 │   ├── 06_finetune_colab_256.ipynb
-│   └── 07_finetune_kaggle_256.ipynb
+│   ├── 07_finetune_kaggle_256.ipynb
+│   └── 08_results_colab_128.ipynb
+│   └── 09_results_colab_256.ipynb
 ├── src/
 │   ├── config.py       # paths and constants
 │   ├── data.py         # download, clean, build processed splits
-│   └── baseline.py     # TF-IDF + Ridge baseline
+│   └── baseline.py     # TF-IDF & Ridge baseline
 ├── reports/
 │   └── figures/        # saved charts (committed)
+│   └── SUMMARY.md      # portfolio-facing write-up
 ├── models/             # local checkpoints (gitignored)
-├── app/                # demo app (planned)
 ├── PROJECT_LOG.md      # engineering narrative
-├── requirements.txt
 └── README.md
 ```
 
 ## Setup (Windows)
 
-Open a PowerShell window in the project folder (in File Explorer, Shift +
-right-click the folder -> "Open PowerShell window here").
+Open a PowerShell window in the project folder.
 
 1. Create a virtual environment:
    ```powershell
@@ -127,6 +130,12 @@ log-transform again.
 **Regression** on the 0-11 humor label, evaluated with **Spearman correlation**
 against human-derived scores (matching the rJokes paper for benchmark
 comparison). Pearson also reported.
+
+## Possible future extensions
+
+Not part of the current scope, but natural directions if the project is picked
+up again: a multi-seed significance study of the 128-vs-256 comparison; trying a
+larger encoder (RoBERTa); and an LLM-based layer. These are exploratory and may or may not be pursued.
 
 ## License / data use
 

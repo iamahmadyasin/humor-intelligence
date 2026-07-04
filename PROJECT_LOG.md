@@ -1,4 +1,4 @@
-# Project Log — Humor Intelligence
+# Project Log
 
 An engineering narrative of how this project was built: the decisions, the
 dead ends, the bugs, and how each was diagnosed and fixed. Written to document
@@ -10,8 +10,9 @@ real learning happened.
 ## 1. Goal and scope
 
 Build an NLP project on computational humor using only free compute (local CPU,
-Google Colab, Kaggle). The chosen framing: a model that predicts how
-funny a joke is, benchmarked against a classical baseline.
+Google Colab, Kaggle). The chosen framing: a model that predicts how funny a
+joke is, benchmarked against a classical baseline, followed by a full analysis
+of where it works and where it fails.
 
 ## 2. Dataset choice
 
@@ -27,8 +28,8 @@ Initial EDA assumed the `score` column was the raw Reddit score. Inspecting the
 raw source data revealed the labels are actually `round(ln(raw_score + 1))` i.e.
 integers 0-11, while raw scores run into the millions. The EDA notebook had been
 log-transforming an already-log-transformed value (a double transform).
-Fixed by using the label directly as the regression target. It
-changed the modeling approach.
+Fixed by using the label directly as the regression target. It changed the
+modeling approach.
 
 ## 3. Data cleaning
 
@@ -128,7 +129,47 @@ only `max_sequence_length` differed. Rerun via Commit mode (~4.5h, unattended).
 **Test Spearman 0.4059** (Pearson 0.4465) — up from the undertrained 0.3973, and
 now essentially tied with the 128 model's 0.4038.
 
-## 7. Final results and conclusion
+## 7. Repository cleanup: a push_to_hub gotcha
+
+After training, the model appeared to push to two separate HF repos. Cause:
+`trainer.push_to_hub(REPO)` treats its first argument as a **commit message**,
+not a repo name — the model actually goes to a repo named after the training
+`output_dir`, while `tokenizer.push_to_hub(REPO)` uses the argument correctly.
+Result: a complete model repo under the wrong name, plus a tokenizer-only orphan.
+Fixed by setting `hub_model_id=HF_MODEL_REPO` in `TrainingArguments` and passing
+a real commit message to `push_to_hub`. Orphan repos deleted; names reconciled.
+
+## 8. Results and error analysis
+
+Loaded the published 128 model back from the Hub and evaluated on the test set:
+
+- **Reproduces exactly:** Test Spearman **0.4038**, Pearson **0.4397** — matching
+  the training run to four decimals, confirming the pipeline end to end.
+- **Regression to the mean:** the predicted-vs-true plot shows predictions
+  compressed into the 1-5 range; the model never confidently predicts the
+  extremes. Expected for MSE regression on an imbalanced, noisy target.
+- **Confusion matrix (4 classes):** strong on the common middle classes, weak on
+  rare ones. The model essentially never predicts "not funny (0)" or "very
+  funny (6+)". Macro-F1 is only **0.278**, which correctly reflects the poor
+  performance on rare classes that plain accuracy would hide.
+- **Error analysis, two failure types:** (1) *label noise.* Some "worst misses"
+  are jokes the model rated funny but labeled 0, including one with "Reddit Gold
+  and Front Page!" in its own text, suggesting the label, not the model, is
+  wrong; (2) *genuinely hard humor* i.e. short, contextual, culturally specific
+  jokes. This implies the dataset's label noise is part of the performance
+  ceiling, not just model capacity.
+- The 256 model's worst errors overlap strongly with the 128 model's (same
+  mislabeled "Reddit Gold" joke, same short contextual one-liners), which
+  further supports the conclusion that these misses stem from dataset label
+  noise rather than a specific model's weakness.
+- **256 model verified too:** loading the 256 model from the Hub reproduces its
+  training number exactly (Test Spearman 0.4059, Pearson 0.4465). Its
+  predicted-vs-true plot and confusion matrix are near-identical to the 128
+  model's. They have the same regression-to-the-mean and the same avoidance of the
+  extreme classes. This visually confirms the two models are equivalent in
+  behavior, not just in headline score.
+
+## 9. Final results and conclusion
 
 | Model | Context | Test Spearman | Test Pearson |
 |---|---|---|---|
@@ -138,12 +179,11 @@ now essentially tied with the 128 model's 0.4038.
 
 **Conclusion:** the fine-tuned transformer clearly beats the classical baseline
 (~0.40 vs 0.363). Between 128 and 256 tokens, the difference (0.0021) is within
-run-to-run noise so they are statistically equivalent. Since most jokes are
-short (median ~18 words), longer context adds little. 128 is preferred for
-being ~3x faster to train at no meaningful cost to quality.
+run-to-run noise, so they are statistically equivalent. Since most jokes are
+short (median ~18 words), longer context adds little. 128 is preferred for being
+faster to train at no meaningful cost to quality.
 
-
-## 8. Lessons learned
+## 10. Lessons learned
 
 - **Look at your data by hand.** Duplicates, leakage, and title-only junk were
   found by eyeballing examples, not by metrics.
@@ -152,14 +192,18 @@ being ~3x faster to train at no meaningful cost to quality.
 - **Effective batch size = per-device batch × number of GPUs.** A multi-GPU
   environment silently changed it and invalidated a comparison. Always check the
   step count matches expectations.
+- **Know your tools' APIs.** `push_to_hub`'s first positional argument is a
+  commit message, not a repo.
 - **Free-tier compute is workable with the right workflow.** Kaggle Commit mode
   (server-side, unattended) solved the disconnect problem that plagued Colab.
 
-## 9. Status and next steps
+## 11. Status
 
 - [x] Data pipeline, EDA, cleaning
 - [x] TF-IDF baseline (0.363)
 - [x] DistilBERT-128 (0.4038) and DistilBERT-256 (0.4059), both on the Hub
-- [ ] Results notebook
-- [ ] LLM explanation layer
-- [ ] Interactive demo + final writeup
+- [x] Results & error analysis
+- [x] Write-up
+
+Possible future extensions: a larger encoder (RoBERTa); and an
+LLM-based layer.

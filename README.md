@@ -35,8 +35,8 @@ humor-intelligence/
 │   ├── 02_clean.ipynb
 │   ├── 03_baseline.ipynb
 │   ├── 04_finetune_colab_128.ipynb
-│   ├── 05_finetune_colab_256.ipynb
-│   ├── 06_finetune_kaggle_128.ipynb
+│   ├── 05_finetune_kaggle_128.ipynb
+│   ├── 06_finetune_colab_256.ipynb
 │   └── 07_finetune_kaggle_256.ipynb
 ├── src/
 │   ├── config.py       # paths and constants

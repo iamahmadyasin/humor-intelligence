@@ -48,7 +48,7 @@ humor-intelligence/
 │   ├── data.py         # download, clean, build processed splits
 │   └── baseline.py     # TF-IDF & Ridge baseline
 ├── reports/
-│   └── figures/        # saved charts (committed)
+│   ├── figures/        # saved charts (committed)
 │   └── SUMMARY.md      # portfolio-facing write-up
 ├── models/             # local checkpoints (gitignored)
 ├── PROJECT_LOG.md      # engineering narrative

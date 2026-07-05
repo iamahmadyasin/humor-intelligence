@@ -10,7 +10,7 @@ from data import load_split, clean_split, remove_leakage
 
 
 def compute_metrics(true, pred):
-    """Standard metrics reported everywhere: Spearman, Pearson, RMSE, MAE."""
+    # Standard metrics reported everywhere: Spearman, Pearson, RMSE, MAE.
     true = np.asarray(true, dtype=float)
     pred = np.asarray(pred, dtype=float).squeeze()
     return {
@@ -24,7 +24,7 @@ def compute_metrics(true, pred):
 
 @torch.no_grad()
 def predict(model, tokenizer, texts, max_length, batch_size=64, device=None):
-    """Batched regression inference. Works for any HF seq-classification model."""
+    # Batched regression inference. Works for any HF seq-classification model.
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     model.eval().to(device)
     texts = list(texts)

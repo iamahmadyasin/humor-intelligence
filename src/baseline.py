@@ -33,7 +33,7 @@ def run_baseline(
         train = train.sample(sample_size, random_state=0).reset_index(drop=True)
         print(f"  (using a {sample_size:,}-row sample of train)")
 
-    print(f"Vectorizing {len(train):,} jokes (TF-IDF, this is the slow step)...")
+    print(f"Vectorizing {len(train):,} jokes (TF-IDF)...")
     t0 = time.time()
     vec = TfidfVectorizer(
         max_features=max_features,
@@ -60,7 +60,7 @@ def run_baseline(
     }
 
     print("\nTest metrics")
-    print(f"Spearman rho: {metrics['spearman']:.4f}   <- headline number")
+    print(f"Spearman rho: {metrics['spearman']:.4f}")
     print(f"Pearson r:    {metrics['pearson']:.4f}")
     print(f"MAE:          {metrics['mae']:.4f}")
     print(f"RMSE:         {metrics['rmse']:.4f}")
@@ -68,7 +68,7 @@ def run_baseline(
     mean_rmse = mean_squared_error(
         test["score"], np.full(len(test), train["score"].mean())
     ) ** 0.5
-    print(f"\n(predict-the-mean RMSE {mean_rmse:.4f} — model should be lower)")
+    print(f"\n(predict-the-mean RMSE {mean_rmse:.4f}, model should be lower)")
 
     return model, vec, metrics
 

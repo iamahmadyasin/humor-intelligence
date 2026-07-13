@@ -36,6 +36,8 @@ On the leaked evaluation (paper's condition), RoBERTa-large scores **0.440 /
 0.478**, surpassing the paper. The ~0.003 gap on clean eval is attributable to
 leakage inflation in the paper's results, not to model quality.
 
+![Predicted vs True](reports/figures/07_pred_vs_true_all.png)
+
 ### Models on the Hugging Face Hub
 
 | Model | Hub link |
@@ -63,6 +65,8 @@ applied `round(ln(raw_score + 1))`, compressing raw scores (which peak at
 ~136k upvotes) into integers 0–11 (the paper reports 0–10; labels of 11 are
 rare but present in the data). This is used directly as the regression target
 without log-transforming again.
+
+![Label Distribution](reports/figures/01_label_distribution.png)
 
 ### Data cleaning
 
@@ -153,6 +157,8 @@ All models compress predictions into the 1–5 range and never confidently predi
 the extremes (0 or 6+). This is expected for MSE regression on an imbalanced,
 noisy target as the model hedges toward the safe middle because confident extreme
 predictions are punished heavily when the noisy label disagrees.
+
+![Confusion Matrix](reports/figures/07_confusion_all.png)
 
 ### Label noise as a performance ceiling
 
@@ -267,16 +273,6 @@ test-set variants to separate model quality from dataset artifacts.
   planned but not yet completed. Current results are single-seed.
 - These are humor rankers, not judges of objective funniness i.e. appropriate
   for research and demos, not high-stakes use.
-
----
-
-## Possible future work
-
-Not part of the current scope, but natural next steps:
-
-- **Multi-seed study:** 3 seeds each for DistilBERT and RoBERTa-base to add
-  error bars and confirm the ranking is stable.
-- **128-vs-256 token comparison** under the new protocol, with error bars.
 
 ---
 

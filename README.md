@@ -204,7 +204,6 @@ humor-intelligence/
 │   └── processed/                         # cleaned splits (gitignored)
 ├── models/                                # local checkpoints (gitignored)
 ├── PROJECT_LOG.md                         # engineering narrative
-├── SUMMARY.md                             # portfolio-facing write-up
 └── README.md
 ```
 

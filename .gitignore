@@ -20,3 +20,4 @@ models/*
 *.pdf
 *.tex
 *.bib
+reports/paper/*

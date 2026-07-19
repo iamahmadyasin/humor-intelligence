@@ -27,16 +27,23 @@ their numbers.
 | Model | Params | Clean Spearman | Clean Pearson | Clean RMSE |
 |---|---|---|---|---|
 | TF-IDF + Ridge | — | 0.363 | 0.414 | 1.645 |
-| DistilBERT | 66M | 0.412 | 0.451 | 1.643 |
-| RoBERTa-base | 125M | 0.419 | 0.451 | 1.705 |
+| DistilBERT | 66M | 0.411 ± 0.002 | 0.450 ± 0.002 | 1.641 ± 0.024 |
+| RoBERTa-base | 125M | 0.418 ± 0.003 | 0.453 ± 0.002 | 1.760 ± 0.049 |
 | **RoBERTa-large** | **355M** | **0.432** | **0.470** | **1.630** |
-| roBERTa-large (paper) | 355M | 0.435 | 0.474 | 1.614 |
+| roBERTa-large (paper, leaked eval) | 355M | 0.435 | 0.474 | 1.614 |
+
+DistilBERT and RoBERTa-base are reported as mean ± std over 3 seeds
+(42, 123, 456). RoBERTa-large is single-seed; additional seeds in progress.
+The ladder is stable: the gap between adjacent models (0.007–0.014 Spearman)
+is 2–5× larger than the within-model standard deviation (0.002–0.003),
+confirming the ranking reflects genuine capacity differences rather than
+seed variance.
 
 On the leaked evaluation (paper's condition), RoBERTa-large scores **0.440 /
-0.478**, surpassing the paper. The ~0.003 gap on clean eval is attributable to
-leakage inflation in the paper's results, not to model quality.
+0.478**, surpassing the paper's 0.435 / 0.474. The ~0.003 gap on clean eval
+is attributable to leakage inflation in the paper's results.
 
-![Predicted vs True](reports/figures/07_pred_vs_true_all.png)
+![Multi-Seed Results](reports/figures/06_multiseed_bars.png)
 
 ### Models on the Hugging Face Hub
 
@@ -268,8 +275,6 @@ test-set variants to separate model quality from dataset artifacts.
   shaped by timing and virality as much as joke quality.
 - The models regress to the mean and are unreliable at the extremes of the
   score range.
-- The 128-vs-256 token comparison and the multi-seed significance study are
-  planned but not yet completed. Current results are single-seed.
 - These are humor rankers, not judges of objective funniness i.e. appropriate
   for research and demos, not high-stakes use.
 

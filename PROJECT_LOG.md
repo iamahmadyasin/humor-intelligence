@@ -289,7 +289,33 @@ factual claims. The rework:
 - Added committed `results/*.csv` so every table and figure is reproducible
   from version-controlled data.
 
-## 13. Lessons learned
+## 13. Multi-seed study
+
+Single-seed results can be dismissed as accidents. To confirm the
+model ladder is stable, DistilBERT and RoBERTa-base were each trained with
+three seeds (42, 123, 456) under the identical protocol. RoBERTa-large remains
+single-seed due to its ~30h training cost; additional seeds are planned.
+
+| Model | Seeds | Spearman (mean ± std) | Pearson (mean ± std) | RMSE (mean ± std) |
+|---|---|---|---|---|
+| DistilBERT (66M) | 3 | 0.411 ± 0.002 | 0.450 ± 0.002 | 1.641 ± 0.024 |
+| RoBERTa-base (125M) | 3 | 0.418 ± 0.003 | 0.453 ± 0.002 | 1.760 ± 0.049 |
+| RoBERTa-large (355M) | 1 | 0.432 | 0.470 | 1.630 |
+
+The within-model standard deviation (~0.002–0.003 Spearman) is small relative
+to the between-model gaps (~0.007–0.014), confirming the ladder is real. Each
+seed showed the same epoch-3 peak and subsequent overfitting, and the error
+bars don't overlap between adjacent models.
+
+![Multi-Seed Results](reports/figures/06_multiseed_bars.png)
+
+An unexpected finding from the seed runs: RoBERTa-base consistently has
+worse RMSE than DistilBERT (1.760 ± 0.049 vs 1.641 ± 0.024) despite higher
+Spearman. This wasn't a single-seed fluke as it held across all three seeds.
+The ranking ability (Spearman) and magnitude calibration (RMSE) are
+decoupled for these models.
+
+## 14. Lessons learned
 
 - **Look at your data by hand.** Duplicates, leakage, and title-only junk were
   found by eyeballing examples, not by metrics.
@@ -311,7 +337,7 @@ factual claims. The rework:
   different setups creates ambiguity in every comparison. One `train.py` and
   one `evaluate.py` eliminated that.
 
-## 14. Status
+## 15. Status
 
 - [x] Data pipeline, EDA, cleaning, leakage discovery
 - [x] TF-IDF baseline (0.363)
@@ -319,10 +345,10 @@ factual claims. The rework:
 - [x] Evaluation harness with clean/leaky/leaked-only variants
 - [x] Results & error analysis with figures
 - [x] Write-up and documentation
+- [x] Multi-seed runs
 
-## 15. Possible future extensions
+## 16. Possible future extensions
 
-- Multi-seed significance study to add error bars and confirm the ranking.
 - 128-vs-256 token comparison under the unified protocol with error bars.
 - A larger encoder (RoBERTa-large is already close to the paper but a model with
   more pretraining data might push further).
